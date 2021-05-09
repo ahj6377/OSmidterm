@@ -338,14 +338,19 @@ int SRTF(int tick)
 			int check = 0;
 			for (int j = 0; j < proccnt; j++)
 			{
-				check += PRList[i].IsInQueue;
+				check += PRList[j].IsInQueue;
 			}
 			if (curprocessing == -1 && check == 1)			//아무 프로세스도 할당되지 않고, 레디큐에 하나의 프로세스가 있는경우
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
-				PRList[i].FirstAllocatedTime = tick;
 				curprocessing = PRList[i].ProcID;
-				
+				if(PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+				{
+					PRList[curprocessing-1].FirstAllocatedTime = tick;
+				}
+
+
+
 			}
 			else if (check > 1)		//레디큐에 두개이상의 프로세스가 있는경우
 			{
@@ -367,7 +372,10 @@ int SRTF(int tick)
 				if (change > 0)
 				{
 					printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[curprocessing-1].ProcID);
-
+					if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+					{
+						PRList[curprocessing-1].FirstAllocatedTime = tick;
+					}
 
 				}
 
@@ -396,7 +404,10 @@ int SRTF(int tick)
 
 		}
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
-		PRList[curprocessing - 1].FirstAllocatedTime = tick;
+		if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+		{
+			PRList[curprocessing-1].FirstAllocatedTime = tick;
+		}
 	}
 
 
