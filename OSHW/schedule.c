@@ -344,7 +344,7 @@ int SRTF(int tick)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				curprocessing = PRList[i].ProcID;
-				if(PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+				if(PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)		//SRTF는 non-preemptive이므로 중간에 디스패치되는 경우가있다. firstalloctedtime을 구하기 위한 조건문
 				{
 					PRList[curprocessing-1].FirstAllocatedTime = tick;
 				}
