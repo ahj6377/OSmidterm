@@ -24,7 +24,7 @@ struct PR *PRList;
 
 int schedulingmethod;
 int proccnt;
-int curprocessing = -1;
+int curprocessing = -1;			//curProcessing은 현재 CPU에 할당된 프로세스ID를 가진다. 아무 프로세스도 할당되지 않으면 -1값을 가진다.
 
 int SJF(int tick);
 int FCFS(int tick);
@@ -282,9 +282,9 @@ int FCFS(int tick)
 		int temp = 100000;
 		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당
 		{
-			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)
+			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//Terminate 되지 않았고, 이미 도착해있는 프로세스중
 			{
-				if (temp > PRList[i].ArrivalTime)
+				if (temp > PRList[i].ArrivalTime)						//가장 빨리 들어온 프로세스에게 할당한다. 같은 우선순위의 경우엔 먼저 들어온 job을 처리한다.
 				{
 					temp = PRList[i].ArrivalTime;
 					curprocessing = PRList[i].ProcID;
@@ -372,7 +372,7 @@ int SRTF(int tick)
 				if (change > 0)
 				{
 					printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[curprocessing-1].ProcID);
-					if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+					if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)						//FirstAllocatedTime 구하기 위한 조건문
 					{
 						PRList[curprocessing-1].FirstAllocatedTime = tick;
 					}
@@ -404,7 +404,7 @@ int SRTF(int tick)
 
 		}
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
-		if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)
+		if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
 		{
 			PRList[curprocessing-1].FirstAllocatedTime = tick;
 		}
