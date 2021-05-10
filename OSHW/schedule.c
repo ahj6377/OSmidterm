@@ -33,6 +33,7 @@ int FCFS(int tick);
 int SRTF(int tick);
 //int RR(int tick);
 
+void sortingPRList();
 
 void read_proc_list(const char* file_name)
 {
@@ -81,7 +82,7 @@ void read_proc_list(const char* file_name)
 
 
 	}
-	
+	sortingPRList();
 
 }
 
@@ -443,3 +444,29 @@ int SRTF(int tick)
 
 	return 1;
 }
+
+
+
+void sortingPRList()
+{
+	
+	for (int i = proccnt-1; i >0; i--)
+	{
+		for (int j = 0; j < i; j++)
+		{
+			if (PRList[j].ArrivalTime > PRList[j + 1].ArrivalTime)
+			{
+				Proc temp = PRList[j];
+				PRList[j] = PRList[j + 1];
+				PRList[j + 1] = temp;
+			}
+		}
+		
+	}
+	for (int i = 0; i < proccnt; i++)
+	{
+		PRList[i].Procmem = i;
+	}
+
+}	
+
