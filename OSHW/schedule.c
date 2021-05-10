@@ -13,6 +13,8 @@ typedef struct PR
 	int TurnAroundTime, WaitingTime, ResponseTime;
 	int Terminated;
 	int IsInQueue;
+	int Procmem;
+
 
 	int CurProc;
 
@@ -29,7 +31,7 @@ int curprocessing = -1;			//curProcessing은 현재 CPU에 할당된 프로세스ID를 가진�
 int SJF(int tick);
 int FCFS(int tick);
 int SRTF(int tick);
-//int RR();
+//int RR(int tick);
 
 
 void read_proc_list(const char* file_name)
@@ -52,6 +54,7 @@ void read_proc_list(const char* file_name)
 		PRList[i].WaitingTime = 0;
 		PRList[i].Terminated = 0;
 		PRList[i].IsInQueue = 0;
+		PRList[i].Procmem = -1;
 
 	}
 	for (int i = 0; i < proccnt; i++)
@@ -64,6 +67,7 @@ void read_proc_list(const char* file_name)
 			{
 			case 0:
 				PRList[i].ProcID = temp;
+				PRList[i].Procmem = i;
 			case 1:
 				PRList[i].ArrivalTime = temp;
 			case 2:
@@ -200,8 +204,8 @@ int SJF(int tick)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				PRList[i].FirstAllocatedTime = tick;
-				curprocessing = PRList[i].ProcID;
-				PRList[i].CurProc = 1;
+				curprocessing = PRList[i].Procmem;
+		
 			}
 			
 		}
@@ -210,34 +214,34 @@ int SJF(int tick)
 	if (curprocessing == -1)
 	{
 		int temp = 100000;
-		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당, 이 부분주로 수정
+		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당
 		{ 
 			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)
 			{
 				if (temp > PRList[i].BurstTime)
 				{
 					temp = PRList[i].BurstTime;
-					curprocessing = PRList[i].ProcID;
+					curprocessing = PRList[i].Procmem;
 				}
 
 
 			}
 
 		}
-		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
-		PRList[curprocessing - 1].FirstAllocatedTime = tick;
+		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
+		PRList[curprocessing].FirstAllocatedTime = tick;
 	}
 
 
 
 
-	PRList[curprocessing - 1].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
 
 
-	if (PRList[curprocessing - 1].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
 	{
-		PRList[curprocessing - 1].Terminated = 1;
-		PRList[curprocessing - 1].FinishTime = tick + 1;
+		PRList[curprocessing].Terminated = 1;
+		PRList[curprocessing].FinishTime = tick + 1;
 		curprocessing = -1;
 
 	}
@@ -268,8 +272,7 @@ int FCFS(int tick)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				PRList[i].FirstAllocatedTime = tick;
-				curprocessing = PRList[i].ProcID;
-				PRList[i].CurProc = 1;
+				curprocessing = PRList[i].Procmem;
 
 				
 			}
@@ -287,26 +290,26 @@ int FCFS(int tick)
 				if (temp > PRList[i].ArrivalTime)						//가장 빨리 들어온 프로세스에게 할당한다. 같은 우선순위의 경우엔 먼저 들어온 job을 처리한다.
 				{
 					temp = PRList[i].ArrivalTime;
-					curprocessing = PRList[i].ProcID;
+					curprocessing = PRList[i].Procmem;
 				}
 
 			}
 
 		}
-		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
-		PRList[curprocessing - 1].FirstAllocatedTime = tick;
+		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
+		PRList[curprocessing].FirstAllocatedTime = tick;
 	}
 
 
 
 
-	PRList[curprocessing - 1].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
 
 
-	if (PRList[curprocessing - 1].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
 	{
-		PRList[curprocessing - 1].Terminated = 1;
-		PRList[curprocessing - 1].FinishTime = tick + 1;
+		PRList[curprocessing].Terminated = 1;
+		PRList[curprocessing].FinishTime = tick + 1;
 		curprocessing = -1;
 
 	}
@@ -343,10 +346,10 @@ int SRTF(int tick)
 			if (curprocessing == -1 && check == 1)			//아무 프로세스도 할당되지 않고, 레디큐에 하나의 프로세스가 있는경우
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
-				curprocessing = PRList[i].ProcID;
-				if(PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)		//SRTF는 non-preemptive이므로 중간에 디스패치되는 경우가있다. firstalloctedtime을 구하기 위한 조건문
+				curprocessing = PRList[i].Procmem;
+				if(PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)		//SRTF는 non-preemptive이므로 중간에 디스패치되는 경우가있다. firstalloctedtime을 구하기 위한 조건문
 				{
-					PRList[curprocessing-1].FirstAllocatedTime = tick;
+					PRList[curprocessing].FirstAllocatedTime = tick;
 				}
 
 
@@ -355,13 +358,13 @@ int SRTF(int tick)
 			else if (check > 1)		//레디큐에 두개이상의 프로세스가 있는경우
 			{
 				int temp=100000;
-				int change = 0;
+				int change = -1;
 				for (int j = 0; j < proccnt; j++)
 				{
 					if(PRList[j].IsInQueue == 1 && temp > PRList[j].RemainingTime)
 					{
 						temp = PRList[j].RemainingTime;
-						curprocessing = PRList[j].ProcID;
+						curprocessing = PRList[j].Procmem;
 						change++;
 
 					}
@@ -371,10 +374,10 @@ int SRTF(int tick)
 
 				if (change > 0)
 				{
-					printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[curprocessing-1].ProcID);
-					if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)						//FirstAllocatedTime 구하기 위한 조건문
+					printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[curprocessing].ProcID);
+					if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)						//FirstAllocatedTime 구하기 위한 조건문
 					{
-						PRList[curprocessing-1].FirstAllocatedTime = tick;
+						PRList[curprocessing].FirstAllocatedTime = tick;
 					}
 
 				}
@@ -396,7 +399,7 @@ int SRTF(int tick)
 				if (temp > PRList[i].RemainingTime)
 				{
 					temp = PRList[i].RemainingTime;
-					curprocessing = PRList[i].ProcID;
+					curprocessing = PRList[i].Procmem;
 				}
 
 
@@ -404,23 +407,23 @@ int SRTF(int tick)
 
 		}
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
-		if (PRList[curprocessing-1].BurstTime == PRList[curprocessing-1].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
+		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
 		{
-			PRList[curprocessing-1].FirstAllocatedTime = tick;
+			PRList[curprocessing].FirstAllocatedTime = tick;
 		}
 	}
 
 
 
 
-	PRList[curprocessing - 1].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
 
 
-	if (PRList[curprocessing - 1].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
 	{
-		PRList[curprocessing - 1].IsInQueue = 0;
-		PRList[curprocessing - 1].Terminated = 1;
-		PRList[curprocessing - 1].FinishTime = tick + 1;
+		PRList[curprocessing].IsInQueue = 0;
+		PRList[curprocessing].Terminated = 1;
+		PRList[curprocessing].FinishTime = tick + 1;
 		curprocessing = -1;
 
 	}
