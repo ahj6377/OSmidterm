@@ -214,6 +214,7 @@ int SJF(int tick)
 	if (curprocessing == -1)
 	{
 		int temp = 100000;
+		int check = 0;
 		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당
 		{ 
 			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)
@@ -222,12 +223,15 @@ int SJF(int tick)
 				{
 					temp = PRList[i].BurstTime;
 					curprocessing = PRList[i].Procmem;
+					check++;
 				}
 
 
 			}
 
 		}
+		if (check == 0)
+			return 1;
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
 		PRList[curprocessing].FirstAllocatedTime = tick;
 	}
@@ -283,6 +287,7 @@ int FCFS(int tick)
 	if (curprocessing == -1)
 	{
 		int temp = 100000;
+		int check = 0;
 		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당
 		{
 			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//Terminate 되지 않았고, 이미 도착해있는 프로세스중
@@ -291,11 +296,14 @@ int FCFS(int tick)
 				{
 					temp = PRList[i].ArrivalTime;
 					curprocessing = PRList[i].Procmem;
+					check++;
 				}
 
 			}
 
 		}
+		if (check == 0)
+			return 1;
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
 		PRList[curprocessing].FirstAllocatedTime = tick;
 	}
@@ -358,7 +366,7 @@ int SRTF(int tick)
 			else if (check > 1)		//레디큐에 두개이상의 프로세스가 있는경우
 			{
 				int temp=100000;
-				int change = -1;
+				int change = 0;
 				for (int j = 0; j < proccnt; j++)
 				{
 					if(PRList[j].IsInQueue == 1 && temp > PRList[j].RemainingTime)
@@ -383,7 +391,8 @@ int SRTF(int tick)
 				}
 
 			}
-
+			
+			
 		}
 
 	}
@@ -392,6 +401,7 @@ int SRTF(int tick)
 	if (curprocessing == -1)
 	{
 		int temp = 100000;
+		int check = 0;
 		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당, 이 부분주로 수정
 		{
 			if (PRList[i].IsInQueue == 1)
@@ -400,13 +410,16 @@ int SRTF(int tick)
 				{
 					temp = PRList[i].RemainingTime;
 					curprocessing = PRList[i].Procmem;
+					check++;
 				}
 
 
 			}
 
 		}
-		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, curprocessing);
+		if (check == 0)
+			return 1;
+		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
 		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
 		{
 			PRList[curprocessing].FirstAllocatedTime = tick;
