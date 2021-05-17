@@ -11,9 +11,9 @@ typedef struct PR
 	int FinishTime;		
 	int FirstAllocatedTime;
 	int TurnAroundTime, WaitingTime, ResponseTime;
-	int Terminated;		//그 프로세스가 ReadyQueue에 들어와서, 끝났는가를 판별하는 변수
-	int IsInQueue;		//프로세스가 ReadyQueue나 CPU에 할당되있는가를 판별하는 변수 있으면 1 아니면 0
-	int Procmem;		//프로세스의 메모리주소, 이 시뮬레이터에선 Arrivaltime을 기준으로 먼저 도착한 프로세스 순으로 0,1,2.....Process의수-1 로 부여됨
+	int Terminated;		//Check this process is terminated
+	int IsInQueue;		//Process is in ready queue or CPU, it is 1. nor 0 
+	int Procmem;		//Process's memory address, when it comes in order, it's value is 1,2,3.....proccnt-1
 
 
 	
@@ -22,36 +22,36 @@ typedef struct PR
 
 }Proc;
 
-struct PR *PRList;			//txt에서 읽어온 프로세스들을 동적할당하기위한 PR 포인터
+struct PR *PRList;			//read process from txt for dynamic allocate struct PR
 
-int schedulingmethod;		//스케쥴링 방법을 받을 전역변수
-int proccnt;				//프로세스의 수
-int curprocessing = -1;			//curProcessing은 현재 CPU에 할당된 프로세스메모리값을 가진다. 아무 프로세스도 할당되지 않으면 -1값을 가진다.
-int TQ = 2;					//RR에 사용할 Time Quantum
-
-
-//스케쥴링 함수 공통사항으로 모든 프로세스가 terminate 되었으면 0 그렇지않으면 1을 리턴함
-int SJF(int tick);		//SFJ구현
-int FCFS(int tick);		//FCFS구현
-int SRTF(int tick);		//SRTF구현
-int RR(int tick);		//RR구현
+int schedulingmethod;		//scheduling method
+int proccnt;				//numbers of process
+int curprocessing = -1;			//curprocessing has -1 value no process is in cpu, when process comes to cpu, this value has process's memory(Procmem) 
+int TQ = 2;					//Time Quantum for RR
 
 
-void sortingPRList();		//txt파일에 Arrival time순으로 정렬되있지 않더라도 정렬해주는 함수
-//#####################Queue 와 관련된 변수 및 함수
-//RR은 queue를 이용해 구현하는게 더 쉬워서 Queue 자료구조를 사용했습니다.
+//scheduling method functions, these functions return 0 when all process are terminated, return 1 when any processes remain
+int SJF(int tick);		//
+int FCFS(int tick);		//
+int SRTF(int tick);		//
+int RR(int tick);		//
+
+
+void sortingPRList();		//Sorting PRList on the basis of Arrival time
+//#####################Queue
+//RR is easier when using Queue then not
 int front = -1;
 int rear = -1;
 int *queue;
 
 int IsEmpty(void) {
-	if (front == rear)//front와 rear가 같으면 큐는 비어있는 상태 
+	if (front == rear)
 		return 1;
 	else return 0;
 }
 int IsFull(void) {
-	int tmp = (rear + 1) % proccnt; //원형 큐에서 rear+1을 MAX로 나눈 나머지값이
-	if (tmp == front)//front와 같으면 큐는 가득차 있는 상태 
+	int tmp = (rear + 1) % proccnt; 
+	if (tmp == front)
 		return 1;
 	else
 		return 0;
@@ -76,14 +76,14 @@ int deleteq() {
 }
 
 
-//####################큐 구현 끝
+//####################Queue
 
 
 
 
 
 
-void read_proc_list(const char* file_name)		//프로세스 리스트를 파일에서 읽어 tx
+void read_proc_list(const char* file_name)	
 {
 	
 	FILE* fp = fopen(file_name, "r");
@@ -106,7 +106,7 @@ void read_proc_list(const char* file_name)		//프로세스 리스트를 파일에서 읽어 tx
 		PRList[i].Procmem = -1;
 
 	}
-	for (int i = 0; i < proccnt; i++)		//PRList 초기화
+	for (int i = 0; i < proccnt; i++)		//PRList initiate
 	{
 		for (int j = 0; j < 3; j++)
 		{
@@ -141,7 +141,7 @@ void read_proc_list(const char* file_name)		//프로세스 리스트를 파일에서 읽어 tx
 
 
 
-//schedulingmethod 전역변수에 method를 전달하는 함수
+//Pass method to Global variable schedulingmethod 
 void set_schedule(int method)
 {
 	
@@ -159,7 +159,7 @@ void set_schedule(int method)
 	
 }
 
-//매 tick마다 schedulingmethod에 따라서 스케쥴링 진행
+
 int do_schedule(int tick)
 {
 
@@ -229,7 +229,7 @@ void print_performance()
 int SJF(int tick)
 {
 
-	//모든 프로세스가 terminate 되었는지 확인하는 블록
+	//Block that check all process is terminated.
 	int IsFinished = 0;
 	for (int i = 0; i < proccnt; i++)
 	{
@@ -253,19 +253,19 @@ int SJF(int tick)
 				if (PRList[j].IsInQueue == 1)
 					check++;
 			}
-			if (curprocessing == -1 && check == 1)		//디스패치가 필요한 경우 - 새로운 프로세스가 들어왔을때 레디큐에 하나의 프로세스만 있는 경우
+			if (curprocessing == -1 && check == 1)		//need to dispatch - New process arrives and one process is in RQ(Ready queue)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				PRList[i].FirstAllocatedTime = tick;
 				curprocessing = PRList[i].Procmem;
 		
 			}
-			else if (curprocessing == -1 && check > 1)	//새로운 프로세스가 들어왔을때 레디큐에 둘 이상의 프로세스가 있는 경우
+			else if (curprocessing == -1 && check > 1)	//new process arrives and two or more processes are in RQ
 			{
 				int temp = 100000;
 				for (int j = 0; j < proccnt; j++)
 				{
-					if (temp > PRList[j].RemainingTime && PRList[j].IsInQueue == 1)		//Remaingtime이 같을땐 먼저 들어온 프로세스가 우선순위를 가진다.
+					if (temp > PRList[j].RemainingTime && PRList[j].IsInQueue == 1)		//Processes have same time, first come process has priority
 					{
 						temp = PRList[j].RemainingTime;
 						curprocessing = PRList[j].Procmem;
@@ -280,15 +280,15 @@ int SJF(int tick)
 		}
 
 	}
-	if (curprocessing == -1)//CPU가 비었을경우
+	if (curprocessing == -1)//When CPU is empty
 	{
 		int temp = 100000;
-		int check = 0;		//레디큐에 프로세스가 몇개 있는지 확인하는 변수
+		int check = 0;		//variable that checks processes in CPU or RQ
 		for (int i = 0; i < proccnt; i++)			
 		{ 
-			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//레디큐에 있는 프로세스들중
+			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//processes in RQ
 			{
-				if (temp > PRList[i].BurstTime)		//Bursttime(non-preemptive이므로 RemainingTime으로 해도 무관)이 가장 짧은 프로세스를 선택한다.
+				if (temp > PRList[i].BurstTime)		//allocate shortest Bursttime(non-preemptive, so it is same as remaining time)
 				{
 					temp = PRList[i].BurstTime;
 					curprocessing = PRList[i].Procmem;
@@ -299,9 +299,9 @@ int SJF(int tick)
 			}
 
 		}
-		if (check == 0)		//레디큐에 아무 프로세스도 없고 나중에 프로세스가 더 오긴 하지만 모든 프로세스가 terminate된건 아니므로 process를 진행하지 않고 리턴한다.
+		if (check == 0)		//RQ has no process but in txt, some processes will arrive so return 1
 			return 1;
-		//그외엔 레디큐에 프로세스가 있고 정상적으로 디스패치가 진행된다.
+		//else dispatch 
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
 		PRList[curprocessing].FirstAllocatedTime = tick;
 	}
@@ -309,10 +309,10 @@ int SJF(int tick)
 
 
 
-	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				//process 1 tick
 
 
-	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			//allocating process is terminated, return cpu
 	{
 		PRList[curprocessing].IsInQueue = 0;
 		PRList[curprocessing].Terminated = 1;
@@ -350,7 +350,7 @@ int FCFS(int tick)
 				if (PRList[j].IsInQueue == 1)
 					check++;
 			}
-			if (curprocessing == -1 && check == 1)		//디스패치가 필요한 경우 - 현재 아무 프로세스도 실행중이지 않을때 새로운 프로세스가 들어옴
+			if (curprocessing == -1 && check == 1)		//need to dispatch - New process arrives and one process is in RQ(Ready queue)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				PRList[i].FirstAllocatedTime = tick;
@@ -358,12 +358,12 @@ int FCFS(int tick)
 
 				
 			}
-			else if (curprocessing == -1 && check > 1)		//현재 아무 프로세스도 CPU에 할당되있지 않고 레디큐에 두개이상의 프로세스가 있는경우
+			else if (curprocessing == -1 && check > 1)		//new process arrives and two or more processes are in RQ
 			{
 				
 				for (int j = 0; j < proccnt; j++)
 				{
-					if (PRList[j].IsInQueue == 1)		//큐에있는 프로세스중 가장 먼저온 프로세스를 할당함
+					if (PRList[j].IsInQueue == 1)		//allocate first of all
 					{
 						curprocessing = PRList[j].Procmem;
 						break;
@@ -383,11 +383,11 @@ int FCFS(int tick)
 	{
 		int temp = 100000;
 		int check = 0;
-		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당
+		for (int i = 0; i < proccnt; i++)			//allocate process when RQ is empty
 		{
-			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//Terminate 되지 않았고, 이미 도착해있는 프로세스중
+			if (tick > PRList[i].ArrivalTime && PRList[i].Terminated == 0)		//Process in RQ
 			{
-				if (temp > PRList[i].ArrivalTime)						//가장 빨리 들어온 프로세스에게 할당한다. 같은 우선순위의 경우엔 먼저 들어온 job을 처리한다.
+				if (temp > PRList[i].ArrivalTime)						//Allocate First of all
 				{
 					temp = PRList[i].ArrivalTime;
 					curprocessing = PRList[i].Procmem;
@@ -406,10 +406,10 @@ int FCFS(int tick)
 
 
 
-	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				//process 1 tick
 
 
-	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			//return cpu
 	{
 		PRList[curprocessing].IsInQueue = 0;
 		PRList[curprocessing].Terminated = 1;
@@ -438,7 +438,7 @@ int SRTF(int tick)
 
 	for (int i = 0; i < proccnt; i++)
 	{
-		if (PRList[i].ArrivalTime == tick)					//Process가 들어왔을때의 알고리즘
+		if (PRList[i].ArrivalTime == tick)					//algorithm when process arrives
 		{
 			printf("[tick: %d ] New Process (ID: %d) newly joins to ready queue \n", tick, PRList[i].ProcID);
 			PRList[i].IsInQueue = 1;
@@ -447,11 +447,12 @@ int SRTF(int tick)
 			{
 				check += PRList[j].IsInQueue;
 			}
-			if (curprocessing == -1 && check == 1)			//아무 프로세스도 할당되지 않고, 레디큐에 하나의 프로세스가 있는경우
+			if (curprocessing == -1 && check == 1)			//need to dispatch - New process arrives and one process is in RQ(Ready queue)
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				curprocessing = PRList[i].Procmem;
-				if(PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)		//SRTF는 non-preemptive이므로 중간에 디스패치되는 경우가있다. firstalloctedtime을 구하기 위한 조건문
+				//SRTF is preemptive solution, so dispatch in the middle. using this if block need to first allocated time 
+				if(PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)		
 				{
 					PRList[curprocessing].FirstAllocatedTime = tick;
 				}
@@ -459,13 +460,15 @@ int SRTF(int tick)
 
 
 			}
-			else if (check > 1)		//레디큐에 두개이상의 프로세스가 있는경우
+			else if (check > 1)		//RQ > 1
 			{
 				int temp=100000;
-				int change = 0;
+				int change = 0;	//check process change
 				for (int j = 0; j < proccnt; j++)
 				{
-					if(PRList[j].IsInQueue == 1 && temp > PRList[j].RemainingTime)		//가장 Remaining time이 작은 프로세스를 CPU에 할당한다, 큐에 프로세스가 없으면 프로세스 변화가 없다
+					//가장 Remaining time이 작은 프로세스를 CPU에 할당한다, 큐에 프로세스가 없으면 프로세스 변화가 없다
+					//Allocate shortest Remaining time process, RQ has no process, CPU's allocated process has no change
+					if(PRList[j].IsInQueue == 1 && temp > PRList[j].RemainingTime)		
 					{
 						temp = PRList[j].RemainingTime;
 						curprocessing = PRList[j].Procmem;
@@ -476,10 +479,10 @@ int SRTF(int tick)
 
 				}
 
-				if (change > 0)		//change가 바뀌었을경우엔 Contextswitching이 일어난것
+				if (change > 0)		//when 'change' is changed, context-switching occured
 				{
 					printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[curprocessing].ProcID);
-					if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)						//FirstAllocatedTime 구하기 위한 조건문
+					if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)						//if block to get first allocated time
 					{
 						PRList[curprocessing].FirstAllocatedTime = tick;
 					}
@@ -498,7 +501,7 @@ int SRTF(int tick)
 	{
 		int temp = 100000;
 		int check = 0;
-		for (int i = 0; i < proccnt; i++)			//레디큐가 비었을경우 새 프로세스 할당 가장 Remaining time이 작은 프로세스를 할당
+		for (int i = 0; i < proccnt; i++)		//CPU is empty, shortest remaining time process is allocated
 		{
 			if (PRList[i].IsInQueue == 1)
 			{
@@ -516,7 +519,7 @@ int SRTF(int tick)
 		if (check == 0)
 			return 1;
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
-		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
+		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //if block to get first allocated time
 		{
 			PRList[curprocessing].FirstAllocatedTime = tick;
 		}
@@ -525,10 +528,10 @@ int SRTF(int tick)
 
 
 
-	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				
 
 
-	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			
 	{
 		PRList[curprocessing].IsInQueue = 0;
 		PRList[curprocessing].Terminated = 1;
@@ -566,7 +569,7 @@ void sortingPRList()
 }	
 
 
-//RR은 queue 자료구조를 통해서 구현했습니다
+//build RR using Queue
 int RR(int tick)
 {
 	int IsFinished = 0;
@@ -585,7 +588,7 @@ int RR(int tick)
 
 	for (int i = 0; i < proccnt; i++)
 	{
-		if (PRList[i].ArrivalTime == tick)					//Process가 들어왔을때의 알고리즘
+		if (PRList[i].ArrivalTime == tick)					//when process arrived
 		{
 			printf("[tick: %d ] New Process (ID: %d) newly joins to ready queue \n", tick, PRList[i].ProcID);
 			addq(i);
@@ -595,7 +598,7 @@ int RR(int tick)
 			{
 				check += PRList[j].IsInQueue;
 			}
-			if (curprocessing == -1 && check == 1)			//아무 프로세스도 할당되지 않고, 레디큐에 하나의 프로세스가 있는경우
+			if (curprocessing == -1 && check == 1)			//RQ has one process and CPU isn't allocated process
 			{
 				printf("[tick: %d ] Dispatch to Process (ID : %d)\n", tick, PRList[i].ProcID);
 				deleteq();
@@ -620,27 +623,38 @@ int RR(int tick)
 
 	}
 	
-	if (curprocessing == -1 && check > 0)		//아무런 프로세스도 할당되지 않을때, 그리고 레디큐에 프로세스가 있을때
+	if (curprocessing == -1 && check > 0)		//no process in CPU, RQ has process
 	{
 		curprocessing = deleteq();
 		if (check == 0)
 			return 1;
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
 		TQ = 2;
-		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
+		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //if block to calculate First allocated time
 		{
 			PRList[curprocessing].FirstAllocatedTime = tick;
 		}
 	}
+	
+	else if (check == 1 && TQ == 0)
+	{
+		
+		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
+		TQ = 2;
+		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //if block to calculate First allocated time
+		{
+			PRList[curprocessing].FirstAllocatedTime = tick;
+		}
 
-	else if (check >1 && TQ == 0)			//Ready Queue에 두개 이상의 프로세스가 있고, Time Quantum이 0이 되었을경우 context switching이 일어난다
+	}
+	else if (check >1 && TQ == 0)	//RQ has two or more process, and Time quantum is 0, context switching ocuurs
 	{
 		
 		TQ = 2;
 		addq(curprocessing);
 		curprocessing = deleteq();
 		printf("[tick: %d ] Dispatch to Process (ID : %d) \n", tick, PRList[curprocessing].ProcID);
-		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //FirstAllocatedTime 구하기 위한 조건문
+		if (PRList[curprocessing].BurstTime == PRList[curprocessing].RemainingTime)   //if block to calculate First allocated time
 		{
 			PRList[curprocessing].FirstAllocatedTime = tick;
 		}
@@ -651,10 +665,10 @@ int RR(int tick)
 
 
 
-	PRList[curprocessing].RemainingTime--;				//현재 작업중인 프로세스를 1초 진행시킨다
+	PRList[curprocessing].RemainingTime--;				
 	TQ--;
 
-	if (PRList[curprocessing].RemainingTime == 0)			//작업중인 프로세스가 완료되면 CPU반환
+	if (PRList[curprocessing].RemainingTime == 0)			
 	{
 		PRList[curprocessing].IsInQueue = 0;
 		PRList[curprocessing].Terminated = 1;
